@@ -25,41 +25,49 @@ CUNY School of Public Health, 55 W 125th St, New York, NY 111027
 
 Concepts of causal inference in epidemiology have important ramifications for studies across bioinformatics and other fields of health research. In this workship, we introduce basic concepts of epidemiology, study design, and causal inference for bioinformaticians. Emphasis is placed on addressing bias and confounding as common threats to assessing a causal pathway in a variety of study design types and when using common forms of analyses such as GWAS and survival analysis. Workshop participants will have the opportunity to create their own structural causal models (DAGs) and use this model to determine how to assess an estimated causal effect. Examples using DESeq2, edgeR, and limma will be used to show how multivariable models can be fitted depending on the hypothesized causal relationship. 
 
-## Pre-requisites
+### Pre-requisites
 
 * Basic knowledge of R syntax
 * Familiarity with regression
 
-## Workshop Participation
+### Workshop Participation
 
 Students will have the opportunity to solve toy problems and execute example code in R.
 
-## _R_ / _Bioconductor_ packages used
+### R / Bioconductor packages used
 
-* dagitty
-* DESeq2
-* edgeR
-* limma
-
-```{r}
-library(dagitty)
+```{r, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+## Bioconductor 3.9 Stable Release
+BiocManager::install(version = "3.9")
 ```
 
+* [dagitty](https://cran.r-project.org/web/packages/dagitty/index.html)
+* [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html)
+* [edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html)
+* [limma](https://bioconductor.org/packages/release/bioc/html/limma.html)
 
-## Time outline
+```{r eval = FALSE}
+library(dagitty)
+library(DESeq2)
+library(edgeR)
+library(limma)
+```
 
+### Time outline
 
-| Activity                     | Time |
-|------------------------------|------|
-| Counterfactuals              | 15m  |
-| Causal Inference	           | 10m  |
-| Bias and Confounding	       | 10m  |
-| Causal Inference in R        | 10m  |
-| Toy Problems	               | 15m  |
+| Activity              | Time |
+| --------------------- | ---- |
+| Counterfactuals       | 15m  |
+| Causal Inference      | 10m  |
+| Bias and Confounding  | 10m  |
+| Causal Inference in R | 10m  |
+| Toy Problems          | 15m  |
 
 ## Workshop goals and objectives
 
-## Learning goals
+### Learning goals
 
 * Describe the differences in common experimental and observational study designs
 * Apply concepts of study design to common analyses in bioinformatics such as GWAS and survival analysis
@@ -67,7 +75,7 @@ library(dagitty)
 * Develop a structural causal diagram/directed acyclic graph (DAG) of causal relationships and assess pathways of interest
 * Recognize the limitations and assumptions of multivariable regression in observational studies, and how this affects common analyses such as DESeq2, edgeR, and limma
 
-## Learning objectives
+### Learning objectives
 
 * Assess a study design in terms of causal inference
 * Learn about path blocking to prevent confounding
@@ -83,13 +91,20 @@ Requisite boring dictionary definition:
 
 This doesn't tell us much though in terms of identifying a cause. How do we know our potential cause brought about an effect or a result? Perhaps it preceded the effect of interest. However, it could still just be a coincidence. Perhaps there is a lurking second cause that causes both our potential cause and the observed effect.
 
+Despite this, I think humans (and animals) tend to have a relatively intuitive understanding of causation when we observe it directly. When I burn my finger while cooking, I know what caused it--my finger coming into contact with a hot stove. I could  also trace the causal pathway backward and identify what caused my finger to come into contact with the hot stove in the first place--such as my motivation to cook dinner or me being distracted by the antics of my cat.
+
+**Example:** My cat, who I adopted in 2017, has quickly learned that jumping on my kitchen table while I’m eating results in him getting a spritz of water with a spray bottle--but only if the spray bottle is within reach. **What potential causal variables could my cat be considering when he decides to jump on the table?**
+
 ## The counterfactual definition of a cause
-Rather than relying on vague dictionary definitions, the most commonly accepted definition of a cause in modern epidemiology is based on a counterfactual: *what would have happened had the event of interest not occurred*.
+However, the nature of much of the work I (and probably most of you) do is that we cannot directly observe what caused an event of interest. Instead we must rely on inferences we draw from our data to establish an argument for a particular causal mechanism or pathway. 
+
+Rather than relying on vague dictionary definitions or me talking at length about my cat to inform the science of causal inference, the most commonly accepted definition of a cause in modern epidemiology is based on a counterfactual: *what would have happened had the event of interest not occurred*.
 
 But that's not very intuitive or easy to parse so let's consider an example:
 
 ### Example: A dog and an ambulance
-An ambulance drives by a house with its sirens on. A dog in the house barks. We can ask the causal question in a straightforward way: Did the ambulance driving by the house cause the dog to bark? 
+
+An ambulance drives by a house with its sirens on. A dog in the house barks. We can ask the causal question in a straightforward way: **Did the ambulance driving by the house cause the dog to bark?** 
 
 Alternatively, we can rephrase the question in terms of a counterfactual: Would the dog have barked if the ambulance had not driven by the house? We can visualize the relationship using a causal diagram also called a directed acyclic graph (DAG).
 
@@ -101,9 +116,14 @@ coordinates(cd1) <- list(x=c(Ambulance=1, Dog_Barking=2),
                          y=c(Ambulance=0, Dog_Barking=0))
 plot(cd1)
 ```
-This diagram depicts the cause (the ambulance) and the effect (the dog barking) with an arrow indicating the direction of the causal relationship. In contrast to a diagram showing a statistical relationship, causal diagrams must state a directional relationship.
+This diagram depicts the cause or exposure (the ambulance) and the effect or the outcome (the dog barking) with an arrow indicating the direction of the causal relationship. In contrast to a diagram showing a statistical relationship, causal diagrams must state a directional relationship.
 
-## Confounding
+This is the simplest form of a causal diagram. If we were to statistically model the effect for this relationship using regression, a simple two-variable model containing the exposure and the outcome would give us a correct, unbiased estimate of the actual strength of the cause on the effect. However, we are rarely that lucky. A common source of bias is confounding.
+
+## Bias and Confounding
+
+### Confounding
+
 Confounding arises when a third variable is present in the relationship between cause-and-effect. A confounder is present when:
 1. The confounder causes the outcome
 2. The confounder causes the exposure
@@ -122,36 +142,149 @@ coordinates(cd2) <- list(x=c(Ambulance=1, Dog_Barking=3, Car_Crash=2),
                          y=c(Ambulance=0, Dog_Barking=0, Car_Crash=1))
 plot(cd2)
 ```
+
+### Colliders
+
+Taken at face value, colliders are similar to confounders. However, colliders are not common causes of the exposure and outcome. Instead:
+1. The outcome causes the collider
+2. The exposure causes the collider
+3. The collider is not a mediator
+
+The relationship between the ambulance and the barking dog could be confounded by a third variable: a nearby car crash. Perhaps this car crash is what started the dog barking before the ambulance even arrived, but the ambulance caused the dog to bark even more.
+
+```{r}
+cd3 <- dagitty( "dag {
+  Ambulance -> Dog_Barking
+  Sleep_Disruption <- Ambulance
+  Sleep_Disruption <- Dog_Barking
+}")
+coordinates(cd3) <- list(x=c(Ambulance=1, Dog_Barking=3, Sleep_Disruption=2),
+                         y=c(Ambulance=0, Dog_Barking=0, Sleep_Disruption=1))
+plot(cd3)
 ```
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+Adjusting for a collider as one would for a confounder can create bias. In effect by adjusting for a collider, a backdoor pathway is created between the exposure and the outcome. So what's the proper way of dealing with colliders? Ignoring them! Hypothesized colliders should not be adjusted for or included in models.
 
-
+### Selection bias
+A final major issue of causal inference is selection bias. This arises when selection is dependent on the outcome in the study:
+```{r}
+cd4 <- dagitty( "dag {
+  E -> O
+  O -> S
+  E -> S
+}")
+coordinates(cd4) <- list(x=c(E=1, O=3, S=2),
+                         y=c(E=0, O=0, S=1))
+plot(cd4)
 ```
 
-## How to add figures
+As can be seen from the DAG above, selection bias is a collider. In this case, the study is conditioned on the collider by the act of selection for the study. As a result, the study is biased.
 
-## How to add citations
+## Study Designs
 
-Cite like that: [@paper1]
+### Randomized Control Trials (RCTs)
+* Exposure of interest is assigned at random
+* Because exposure is assigned at random, there are no possible confounders of the relationship between exposure and outcome
+* Considered the gold standard for causal inference
+* Selection bias is still possible
 
-## R Markdown
+**Question:** How can selection bias occur in an RCT?
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+#### Instrumental Variable Analysis/Mendelian Randomization
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+- Attempts to mimic an RCT using a source of pseudorandomization
 
-```{r cars}
-summary(cars)
+Consider the DAG for an RCT:
+```{r}
+rct <- dagitty( "dag {
+  Exposure -> Outcome
+  Coin_Flip -> Exposure
+}")
+coordinates(rct) <- list(x=c(Coin_Flip=1, Exposure=2, Outcome=3),
+                         y=c(Coin_Flip=0, Exposure=0, Outcome=0))
+plot(rct)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+In IV/MR analysis the coin flip is replaced with a source of randomization such as genetic variation:
+```{r}
+mr <- dagitty( "dag {
+  Exposure -> Outcome
+  Genetic_Variation -> Exposure
+}")
+coordinates(mr) <- list(x=c(Genetic_Variation=1, Exposure=2, Outcome=3),
+                         y=c(Genetic_Variation=0, Exposure=0, Outcome=0))
+plot(mr)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### Cohort Studies
+
+- Participants are chosen on a common characteristic (such as occupation, location, or history of a particular disease)
+- They are then followed over time and exposures and outcomes can be assessed
+- Selection bias and confounding can occur
+
+### Case-Control Studies
+
+- Participants are chosen based on having an outcome of interest (cases)
+- Then controls are selected that are similar to the cases (often matched on age, sex, and other demographic variables)
+- Selection bias and confounding can occur
+
+### Genome-Wide Association Study (GWAS)
+
+- Observational study of phenotypes
+
+- Often participants are chosen based on a specific phenotype or disease
+
+- Can be a case-control or a cohort study
+
+**Question**: What are some possible sources of confounding or bias in a GWAS?
+
+## Causal Inference in R
+R provides many packages that are helpful in causal inference.
+
+### Dagitty
+Dagitty allows for creating causal diagrams, but also gives you more information including what variables to adjust for in complicated causal models.
+
+```{r}
+g1 <- dagitty( "dag {
+    W1 -> Z1 -> X -> Y
+    Z1 <- V -> Z2
+    W2 -> Z2 -> Y
+    X <-> W1 <-> W2 <-> Y
+}")
+```
+
+```{r}
+plot(graphLayout(g1))
+for( n in names(g1) ){
+    for( m in setdiff( descendants( g1, n ), n ) ){
+        a <- adjustmentSets( g1, n, m )
+        if( length(a) > 0 ){
+            cat("The total effect of ",n," on ",m,
+                " is identifiable controlling for:\n",sep="")
+            print( a, prefix=" * " )
+        }
+    }
+}
+```
+
+### DESeq2
+DESeq2 uses negative binomial regression. As such, it allows you to deconfound by including the confounder as a variable in the design statement:
+```{r, eval = FALSE}
+ddsSE <- DESeqDataSet(se, design = ~ exposure + confounder1 + confounder2)
+ddsSE
+```
+
+### edgeR and limma
+You can use `model.matrix()` to specify the exposure and confounders
+```{r, eval = FALSE}
+#library(edgeR)
+#Litter <- factor(targets$Litter)
+#Treatment <- factor(targets$Treatment)
+#design <- model.matrix(~Litter+Treatment)
+```
+
+## Toy Problems
+
+1. Consider the DAG below. What variables should you control for if you want to measure the effect of X on Y?
+2. Create your own DAG (of a causal relationship of interest to you) then identify what variables you would need to control for to measure the causal effect of interest.
+3. 
