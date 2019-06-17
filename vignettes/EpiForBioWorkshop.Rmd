@@ -48,7 +48,7 @@ BiocManager::install(version = "3.9")
 * [edgeR](https://bioconductor.org/packages/release/bioc/html/edgeR.html)
 * [limma](https://bioconductor.org/packages/release/bioc/html/limma.html)
 
-```{r eval = FALSE}
+```{r, eval = FALSE}
 library(dagitty)
 library(DESeq2)
 library(edgeR)
@@ -108,7 +108,7 @@ An ambulance drives by a house with its sirens on. A dog in the house barks. We 
 
 Alternatively, we can rephrase the question in terms of a counterfactual: Would the dog have barked if the ambulance had not driven by the house? We can visualize the relationship using a causal diagram also called a directed acyclic graph (DAG).
 
-```{r}
+```{r, echo = FALSE}
 cd1 <- dagitty( "dag {
   Ambulance -> Dog_Barking
 }")
@@ -116,6 +116,7 @@ coordinates(cd1) <- list(x=c(Ambulance=1, Dog_Barking=2),
                          y=c(Ambulance=0, Dog_Barking=0))
 plot(cd1)
 ```
+
 This diagram depicts the cause or exposure (the ambulance) and the effect or the outcome (the dog barking) with an arrow indicating the direction of the causal relationship. In contrast to a diagram showing a statistical relationship, causal diagrams must state a directional relationship.
 
 This is the simplest form of a causal diagram. If we were to statistically model the effect for this relationship using regression, a simple two-variable model containing the exposure and the outcome would give us a correct, unbiased estimate of the actual strength of the cause on the effect. However, we are rarely that lucky. A common source of bias is confounding.
@@ -125,6 +126,7 @@ This is the simplest form of a causal diagram. If we were to statistically model
 ### Confounding
 
 Confounding arises when a third variable is present in the relationship between cause-and-effect. A confounder is present when:
+
 1. The confounder causes the outcome
 2. The confounder causes the exposure
 3. The confounder is not a mediator (i.e. it is not present on the causal pathway between the exposure and the outcome)
@@ -132,7 +134,7 @@ Confounding arises when a third variable is present in the relationship between 
 
 Returning to our example, the relationship between the ambulance and the barking dog could be confounded by a third variable: a nearby car crash. Perhaps this car crash is what started the dog barking before the ambulance even arrived, but the ambulance caused the dog to bark even more.
 
-```{r}
+```{r, echo = FALSE}
 cd2 <- dagitty( "dag {
   Ambulance -> Dog_Barking
   Car_Crash -> Ambulance
@@ -143,16 +145,17 @@ coordinates(cd2) <- list(x=c(Ambulance=1, Dog_Barking=3, Car_Crash=2),
 plot(cd2)
 ```
 
+We can "deconfound" the effect of interest by controlling for the confounder. The old-fashioned way of doing this is to manually stratify your data by levels of the confounder. Then you calculate an effect size for each stratum. In a modern regression model, we can include the confounder in our model and it is controlled for. We are effectively stratifying the effect across different levels of the confounder then averaging across strata to get an effect size.
+
 ### Colliders
 
 Taken at face value, colliders are similar to confounders. However, colliders are not common causes of the exposure and outcome. Instead:
+
 1. The outcome causes the collider
 2. The exposure causes the collider
 3. The collider is not a mediator
 
-The relationship between the ambulance and the barking dog could be confounded by a third variable: a nearby car crash. Perhaps this car crash is what started the dog barking before the ambulance even arrived, but the ambulance caused the dog to bark even more.
-
-```{r}
+```{r, echo = FALSE}
 cd3 <- dagitty( "dag {
   Ambulance -> Dog_Barking
   Sleep_Disruption <- Ambulance
@@ -167,7 +170,8 @@ Adjusting for a collider as one would for a confounder can create bias. In effec
 
 ### Selection bias
 A final major issue of causal inference is selection bias. This arises when selection is dependent on the outcome in the study:
-```{r}
+
+```{r, echo = FALSE}
 cd4 <- dagitty( "dag {
   E -> O
   O -> S
@@ -178,7 +182,9 @@ coordinates(cd4) <- list(x=c(E=1, O=3, S=2),
 plot(cd4)
 ```
 
-As can be seen from the DAG above, selection bias is a collider. In this case, the study is conditioned on the collider by the act of selection for the study. As a result, the study is biased.
+As can be seen from the DAG above, selection bias is a collider. In this case, the study is conditioned on the collider by the act of selection for the study. As a result, the study is biased. Another way to think of selection bias is the "already dead" problem. People who have already died of the outcome are not alive to be in the study. These people may have a more aggressive or serious form of the outcome and not including them masks some of the causal relationship.
+
+A common source of selection bias is loss to follow-up. In survival analysis in particular this can be important as the people who are lost may differ in important ways from those who completed the study. Unfortunately because these people were lost, it is often difficult to assess how they differed from those who were not lost.
 
 ## Study Designs
 
@@ -195,7 +201,8 @@ As can be seen from the DAG above, selection bias is a collider. In this case, t
 - Attempts to mimic an RCT using a source of pseudorandomization
 
 Consider the DAG for an RCT:
-```{r}
+
+```{r, echo = FALSE}
 rct <- dagitty( "dag {
   Exposure -> Outcome
   Coin_Flip -> Exposure
@@ -206,7 +213,7 @@ plot(rct)
 ```
 
 In IV/MR analysis the coin flip is replaced with a source of randomization such as genetic variation:
-```{r}
+```{r, echo = FALSE}
 mr <- dagitty( "dag {
   Exposure -> Outcome
   Genetic_Variation -> Exposure
@@ -249,12 +256,12 @@ g1 <- dagitty( "dag {
     W1 -> Z1 -> X -> Y
     Z1 <- V -> Z2
     W2 -> Z2 -> Y
-    X <-> W1 <-> W2 <-> Y
+    X <- W1 -> W2 -> Y
 }")
+plot(graphLayout(g1))
 ```
 
 ```{r}
-plot(graphLayout(g1))
 for( n in names(g1) ){
     for( m in setdiff( descendants( g1, n ), n ) ){
         a <- adjustmentSets( g1, n, m )
@@ -275,16 +282,47 @@ ddsSE
 ```
 
 ### edgeR and limma
-You can use `model.matrix()` to specify the exposure and confounders
+You can use `model.matrix()` to specify the exposure and confounders:
 ```{r, eval = FALSE}
-#library(edgeR)
-#Litter <- factor(targets$Litter)
-#Treatment <- factor(targets$Treatment)
-#design <- model.matrix(~Litter+Treatment)
+batch <- factor(ds$Batch)
+treat <- factor(ds$tx)
+y <- factor(ds$surv)
+design <- model.matrix(~treat + batch)
 ```
+
+Then fit the model either in edgeR:
+```{r, eval = FALSE}
+fit <- glmQLFit(y, design)
+```
+
+Or in limma:
+```{r, eval = FALSE}
+fit <- lmFit(y, design)
+```
+
+As mentioned in the confounding section, estimates obtained for the relationship between the exposure and the outcome have been adjusted for the included confounders (deconfounded). This means that the observed estimate is an averaged effect size across strata of the confounder(s).
 
 ## Toy Problems
 
 1. Consider the DAG below. What variables should you control for if you want to measure the effect of X on Y?
+
+```{r, echo = FALSE}
+ex1 <- dagitty( "dag {
+    W1 -> Z1 <- X -> Y
+    Z1 <- V -> Z2
+    W2 <- Z2 -> Y
+    X -> W1 -> W2 -> Y
+    X <- A -> W1 -> Y
+    B -> W1
+    Z2 <- C -> W2
+}")
+plot(graphLayout(ex1))
+```
+
 2. Create your own DAG (of a causal relationship of interest to you) then identify what variables you would need to control for to measure the causal effect of interest.
-3. 
+3. One important subject that I did not touch on in this workshop was generalizability or transportability of causal findings (applying the results to an external population). What issues might arise when doing so? How can a DAG be used to resolve issues of generalizability and transportability?
+
+## Conclusions
+Unfortunately there's no silver bullet for confounding or bias in R or Bioconductor. Instead, we as researchers must carefully consider possible sources of bias--ideally as we begin designing the study. DAGs are helpful in providing a clear visualization of the hypothesized causal mechanism and identifying potential confounders.
+
+It is important for us to remember that the definition of a cause is rooted in the counterfactual: we need to find a way to come as close as possible to observing what would have happened if a participant's exposure status had been different.
