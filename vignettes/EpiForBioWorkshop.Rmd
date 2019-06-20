@@ -23,7 +23,7 @@ CUNY School of Public Health, 55 W 125th St, New York, NY 111027
 
 ## Workshop Description
 
-Concepts of causal inference in epidemiology have important ramifications for studies across bioinformatics and other fields of health research. In this workship, we introduce basic concepts of epidemiology, study design, and causal inference for bioinformaticians. Emphasis is placed on addressing bias and confounding as common threats to assessing a causal pathway in a variety of study design types and when using common forms of analyses such as GWAS and survival analysis. Workshop participants will have the opportunity to create their own structural causal models (DAGs) and use this model to determine how to assess an estimated causal effect. Examples using DESeq2, edgeR, and limma will be used to show how multivariable models can be fitted depending on the hypothesized causal relationship. 
+Concepts of causal inference in epidemiology have important ramifications for studies across bioinformatics and other fields of health research. In this workshop, we introduce basic concepts of epidemiology, study design, and causal inference for bioinformaticians. Emphasis is placed on addressing bias and confounding as common threats to assessing a causal pathway in a variety of study design types and when using common forms of analyses such as GWAS and survival analysis. Workshop participants will have the opportunity to create their own structural causal models (DAGs) and use this model to determine how to assess an estimated causal effect. Examples using DESeq2, edgeR, and limma will be used to show how multivariable models can be fitted depending on the hypothesized causal relationship. 
 
 ### Pre-requisites
 
@@ -108,13 +108,13 @@ An ambulance drives by a house with its sirens on. A dog in the house barks. We 
 
 Alternatively, we can rephrase the question in terms of a counterfactual: Would the dog have barked if the ambulance had not driven by the house? We can visualize the relationship using a causal diagram also called a directed acyclic graph (DAG).
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.height=1, fig.width=3}
 cd1 <- dagitty( "dag {
   Ambulance -> Dog_Barking
 }")
 coordinates(cd1) <- list(x=c(Ambulance=1, Dog_Barking=2),
                          y=c(Ambulance=0, Dog_Barking=0))
-plot(cd1)
+plot(cd1, height=1)
 ```
 
 This diagram depicts the cause or exposure (the ambulance) and the effect or the outcome (the dog barking) with an arrow indicating the direction of the causal relationship. In contrast to a diagram showing a statistical relationship, causal diagrams must state a directional relationship.
@@ -134,7 +134,7 @@ Confounding arises when a third variable is present in the relationship between 
 
 Returning to our example, the relationship between the ambulance and the barking dog could be confounded by a third variable: a nearby car crash. Perhaps this car crash is what started the dog barking before the ambulance even arrived, but the ambulance caused the dog to bark even more.
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.height=1.5, fig.width=3}
 cd2 <- dagitty( "dag {
   Ambulance -> Dog_Barking
   Car_Crash -> Ambulance
@@ -155,7 +155,7 @@ Taken at face value, colliders are similar to confounders. However, colliders ar
 2. The exposure causes the collider
 3. The collider is not a mediator
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.height=1.5, fig.width=3}
 cd3 <- dagitty( "dag {
   Ambulance -> Dog_Barking
   Sleep_Disruption <- Ambulance
@@ -166,12 +166,19 @@ coordinates(cd3) <- list(x=c(Ambulance=1, Dog_Barking=3, Sleep_Disruption=2),
 plot(cd3)
 ```
 
+```{r, echo=FALSE, fig.height=1.5,fig.width=8}
+par(mfrow=c(1,2))
+plot(cd2)
+plot(cd3)
+```
+
+
 Adjusting for a collider as one would for a confounder can create bias. In effect by adjusting for a collider, a backdoor pathway is created between the exposure and the outcome. So what's the proper way of dealing with colliders? Ignoring them! Hypothesized colliders should not be adjusted for or included in models.
 
 ### Selection bias
 A final major issue of causal inference is selection bias. This arises when selection is dependent on the outcome in the study:
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.height=1.5, fig.width=3}
 cd4 <- dagitty( "dag {
   E -> O
   O -> S
@@ -202,7 +209,7 @@ A common source of selection bias is loss to follow-up. In survival analysis in 
 
 Consider the DAG for an RCT:
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.height=1.5, fig.width=3}
 rct <- dagitty( "dag {
   Exposure -> Outcome
   Coin_Flip -> Exposure
@@ -213,7 +220,7 @@ plot(rct)
 ```
 
 In IV/MR analysis the coin flip is replaced with a source of randomization such as genetic variation:
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.height=1.5, fig.width=5}
 mr <- dagitty( "dag {
   Exposure -> Outcome
   Genetic_Variation -> Exposure
@@ -251,7 +258,7 @@ R provides many packages that are helpful in causal inference.
 ### Dagitty
 Dagitty allows for creating causal diagrams, but also gives you more information including what variables to adjust for in complicated causal models.
 
-```{r}
+```{r, fig.height=3, fig.width=6}
 g1 <- dagitty( "dag {
     W1 -> Z1 -> X -> Y
     Z1 <- V -> Z2
