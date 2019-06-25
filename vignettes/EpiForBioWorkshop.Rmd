@@ -71,7 +71,7 @@ library(limma)
 
 * Describe the differences in common experimental and observational study designs
 * Apply concepts of study design to common analyses in bioinformatics such as GWAS and survival analysis
-* Understand key concepts of epidemiology such as causal inference, confounders, collidors, mediators, counterfactuals, and study designs
+* Understand key concepts of epidemiology such as causal inference, confounders, colliders, mediators, counterfactuals, and study designs
 * Develop a structural causal diagram/directed acyclic graph (DAG) of causal relationships and assess pathways of interest
 * Recognize the limitations and assumptions of multivariable regression in observational studies, and how this affects common analyses such as DESeq2, edgeR, and limma
 
@@ -96,9 +96,9 @@ Despite this, I think humans (and animals) tend to have a relatively intuitive u
 **Example:** My cat, who I adopted in 2017, has quickly learned that jumping on my kitchen table while I’m eating results in him getting a spritz of water with a spray bottle--but only if the spray bottle is within reach. **What potential causal variables could my cat be considering when he decides to jump on the table?**
 
 ## The counterfactual definition of a cause
-However, the nature of much of the work I (and probably most of you) do is that we cannot directly observe what caused an event of interest. Instead we must rely on inferences we draw from our data to establish an argument for a particular causal mechanism or pathway. 
+However, the nature of much of the work I (and probably most of you) do does not allow us to directly observe what caused an event of interest. Instead we must rely on inferences we draw from our data to establish an argument for a particular causal mechanism or pathway. 
 
-Rather than relying on vague dictionary definitions or me talking at length about my cat to inform the science of causal inference, the most commonly accepted definition of a cause in modern epidemiology is based on a counterfactual: *what would have happened had the event of interest not occurred*.
+Rather than relying on vague dictionary definitions or me talking at length about my cat to inform the science of causal inference, the most commonly accepted definition of a cause in modern epidemiology is based on a counterfactual: *what would have happened had the event of interest had the exposure not occurred*.
 
 But that's not very intuitive or easy to parse so let's consider an example:
 
@@ -145,7 +145,7 @@ coordinates(cd2) <- list(x=c(Ambulance=1, Dog_Barking=3, Car_Crash=2),
 plot(cd2)
 ```
 
-We can "deconfound" the effect of interest by controlling for the confounder. The old-fashioned way of doing this is to manually stratify your data by levels of the confounder. Then you calculate an effect size for each stratum. In a modern regression model, we can include the confounder in our model and it is controlled for. We are effectively stratifying the effect across different levels of the confounder then averaging across strata to get an effect size.
+We can "deconfound" the effect of interest by controlling for the confounder. The old-fashioned way of doing this is to manually stratify your data by levels of the confounder. Then you calculate an effect size for each stratum. In a modern regression model, we can include the confounder in our model and it is controlled for. We are effectively stratifying the effect across different levels of the confounder then taking the weighted average across strata to get an effect size.
 
 ### Colliders
 
@@ -209,13 +209,14 @@ A common source of selection bias is loss to follow-up. In survival analysis in 
 
 Consider the DAG for an RCT:
 
-```{r, echo = FALSE, fig.height=1.5, fig.width=3}
+```{r, echo = FALSE, fig.height=1.5, fig.width=5}
 rct <- dagitty( "dag {
   Exposure -> Outcome
   Coin_Flip -> Exposure
+  Exposure <- C -> Outcome
 }")
-coordinates(rct) <- list(x=c(Coin_Flip=1, Exposure=2, Outcome=3),
-                         y=c(Coin_Flip=0, Exposure=0, Outcome=0))
+coordinates(rct) <- list(x=c(Coin_Flip=1, Exposure=2, Outcome=3, C=2.5),
+                         y=c(Coin_Flip=0, Exposure=0, Outcome=0, C=1))
 plot(rct)
 ```
 
@@ -224,9 +225,10 @@ In IV/MR analysis the coin flip is replaced with a source of randomization such 
 mr <- dagitty( "dag {
   Exposure -> Outcome
   Genetic_Variation -> Exposure
+  Exposure <- C -> Outcome
 }")
-coordinates(mr) <- list(x=c(Genetic_Variation=1, Exposure=2, Outcome=3),
-                         y=c(Genetic_Variation=0, Exposure=0, Outcome=0))
+coordinates(mr) <- list(x=c(Genetic_Variation=1, Exposure=2, Outcome=3, C=2.5),
+                         y=c(Genetic_Variation=0, Exposure=0, Outcome=0, C=1))
 plot(mr)
 ```
 
@@ -239,7 +241,7 @@ plot(mr)
 ### Case-Control Studies
 
 - Participants are chosen based on having an outcome of interest (cases)
-- Then controls are selected that are similar to the cases (often matched on age, sex, and other demographic variables)
+- Then controls are selected from a similar population to the cases (often matched on age, sex, and other demographic variables)
 - Selection bias and confounding can occur
 
 ### Genome-Wide Association Study (GWAS)
@@ -331,5 +333,7 @@ plot(graphLayout(ex1))
 
 ## Conclusions
 Unfortunately there's no silver bullet for confounding or bias in R or Bioconductor. Instead, we as researchers must carefully consider possible sources of bias--ideally as we begin designing the study. DAGs are helpful in providing a clear visualization of the hypothesized causal mechanism and identifying potential confounders.
+
+Unmeasured confounding presents a particularly difficult problem for causal inference. Because the confounder was not measured, we cannot easily deconfound for it.
 
 It is important for us to remember that the definition of a cause is rooted in the counterfactual: we need to find a way to come as close as possible to observing what would have happened if a participant's exposure status had been different.
