@@ -173,10 +173,34 @@ plot(cd3)
 ```
 
 
-Adjusting for a collider as one would for a confounder can create bias. In effect by adjusting for a collider, a backdoor pathway is created between the exposure and the outcome. So what's the proper way of dealing with colliders? Ignoring them! Hypothesized colliders should not be adjusted for or included in models.
+Adjusting for a collider as one would for a confounder can create bias. In effect by adjusting for a collider, a backdoor pathway is created between the exposure and the outcome through the collider. So what's the proper way of dealing with colliders? Ignoring them! Hypothesized colliders should not be adjusted for or included in models.
+
+#### Side note on pathways
+In a DAG, a pathway is considered blocked:
+- If there are two arrows pointing into each other along the path (as in the case of a collider)
+- If you have deconfounded (controlled, stratified, adjusted) for a variable on the pathway
+
+```{r, echo = FALSE, fig.height=1.5, fig.width=6}
+par(mfrow=c(1,2))
+sn1 <- dagitty( "dag {
+  E -> O
+  E <- C1 -> C2 -> O
+}")
+coordinates(sn1) <- list(x=c(E=0, C1=1, C2=2, O=3),
+                         y=c(E=0, C1=1, C2=1, O=0))
+plot(sn1)
+
+sn2 <- dagitty( "dag {
+  E -> O
+  E <- C1 -> C2 <- O
+}")
+coordinates(sn2) <- list(x=c(E=0, C1=1, C2=2, O=3),
+                         y=c(E=0, C1=1, C2=1, O=0))
+plot(sn2)
+```
 
 ### Selection bias
-A final major issue of causal inference is selection bias. This arises when selection is dependent on the outcome in the study:
+A final major issue of causal inference is selection bias. This arises when selection is dependent on the exposure and the outcome in the study:
 
 ```{r, echo = FALSE, fig.height=1.5, fig.width=3}
 cd4 <- dagitty( "dag {
@@ -189,7 +213,7 @@ coordinates(cd4) <- list(x=c(E=1, O=3, S=2),
 plot(cd4)
 ```
 
-As can be seen from the DAG above, selection bias is a collider. In this case, the study is conditioned on the collider by the act of selection for the study. As a result, the study is biased. Another way to think of selection bias is the "already dead" problem. People who have already died of the outcome are not alive to be in the study. These people may have a more aggressive or serious form of the outcome and not including them masks some of the causal relationship.
+As can be seen from the DAG above, selection bias is a collider. In this case, the study is conditioned on the collider by the act of selection for the study. As a result, the study is biased. One particularly memorable way to think of selection bias is as the "already dead" problem. People who have already died of the outcome are not alive to be in the study. These people may have a more aggressive or serious form of the outcome and not including them masks some of the causal relationship.
 
 A common source of selection bias is loss to follow-up. In survival analysis in particular this can be important as the people who are lost may differ in important ways from those who completed the study. Unfortunately because these people were lost, it is often difficult to assess how they differed from those who were not lost.
 
@@ -337,3 +361,8 @@ Unfortunately there's no silver bullet for confounding or bias in R or Bioconduc
 Unmeasured confounding presents a particularly difficult problem for causal inference. Because the confounder was not measured, we cannot easily deconfound for it.
 
 It is important for us to remember that the definition of a cause is rooted in the counterfactual: we need to find a way to come as close as possible to observing what would have happened if a participant's exposure status had been different.
+
+## Further Reading
+- Pearl and Mackenzie *Book of Why: The New Science of Causal Effect* (easy summer beach read!)
+- Hernan and Robins *Causal Inference* available free online: https://www.hsph.harvard.edu/miguel-hernan/causal-inference-book/
+- Pearl *Causality: Models, Reasoning, and Inference*
