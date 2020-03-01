@@ -4,7 +4,7 @@
 
 Chloe Mirzayi, cmirzayi@gmail.com
 Levi Waldron, levi.waldron@sph.cuny.edu
-CUNY School of Public Health, 55 W 125th St, New York, NY 111027
+CUNY School of Public Health, 55 W 125th St, New York, NY 10027
 
 # Workshop Description
 
