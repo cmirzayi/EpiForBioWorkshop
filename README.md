@@ -1,3 +1,5 @@
+# This workshop has been archived. The most recent version is available at https://github.com/cmirzayi/EpiForBioWorkshop2020
+
 # Epidemiology for Bioinformaticians
 
 # Instructor(s) name(s) and contact information
